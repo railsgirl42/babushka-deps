@@ -48,6 +48,15 @@ pkg 'rcconf' do
   installs { via :apt, 'rcconf' }
 end
 pkg 'screen'
+pkg 'sed' do
+  installs { via :macports, 'gsed' }
+  provides 'sed'
+  after {
+    in_dir '/opt/local/bin' do
+      sudo "ln -s gsed sed"
+    end
+  }
+end
 pkg 'sshd' do
   installs {
     via :apt, 'openssh-server'
