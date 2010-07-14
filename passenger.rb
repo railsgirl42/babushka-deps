@@ -8,6 +8,7 @@ gem 'passenger gem' do
 end
 
 dep 'passenger configured for apache' do
+  requires 'apache2'
   met? { File.exists? '/etc/apache2/conf.d/passenger' }
   meet {
     shell "passenger-install-apache2-module -a"
