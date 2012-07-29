@@ -1,25 +1,25 @@
 meta :rvm do
   def rvm args
-    shell "/usr/local/rvm/bin/rvm #{args}", :log => args['install']
+    login_shell "rvm #{args}", :log => args['install']
   end
 
-  def gem_path(gem_name)
-    env_info.val_for('INSTALLATION DIRECTORY') + "/gems/" + gem_name + "-" + version(gem_name)
+  def gem_path(gem_name, ruby_version)
+    env_info(ruby_version).val_for('INSTALLATION DIRECTORY') + "/gems/" + gem_name + "-" + version(gem_name,ruby_version)
   end
 
-  def ruby_wrapper_path
-    matches = env_info.val_for('RUBY EXECUTABLE').match(/[^\/]*(.*rvm\/)rubies\/([^\/]*)/)
+  def ruby_wrapper_path(ruby_version)
+    matches = env_info(ruby_version).val_for('RUBY EXECUTABLE').match(/[^\/]*(.*rvm\/)rubies\/([^\/]*)/)
     "#{matches[1]}wrappers/#{matches[2]}/ruby"
   end
 
   private
 
-  def env_info
-    @_cached_env_info ||= rvm('gem env')
+  def env_info(ruby_version)
+    @_cached_env_info ||= rvm("use #{ruby_version} do gem env")
   end
 
-  def version(gem_name)
-    spec = YAML.parse(rvm("gem specification #{gem_name}"))
+  def version(gem_name,ruby_version)
+    spec = YAML.parse(rvm("use #{ruby_version} do gem specification #{gem_name}"))
     spec.select("/version/version")[0].value
   end
 end
@@ -70,7 +70,7 @@ dep 'ruby installed.rvm', :default_ruby do
 end
 
 dep 'setup default ruby.rvm', :default_ruby do
-  requires 'ruby installed.rvm'
+  requires 'ruby installed.rvm'.with(:default_ruby => default_ruby)
   met? { login_shell('ruby --version')["ruby #{default_ruby}"] }
   meet {
     rvm("use #{default_ruby} --default")
@@ -82,35 +82,40 @@ dep 'bundler.rvm' do
   meet { rvm("gem install bundler --no-rdoc --no-ri") }
 end
 
-dep 'passenger.rvm' do
-  requires 'rvm installed'
-  met? { rvm("gem list passenger")["passenger"] }
-  meet { rvm("gem install passenger --no-rdoc --no-ri") }
+dep 'passenger.rvm', :ruby_version do
+  ruby_version.default("1.9.3")
+  requires 'rvm installed', 'ruby installed.rvm'.with(:default_ruby => ruby_version)
+  met? {
+    rvm("use #{ruby_version} do gem list passenger")["passenger"]
+  }
+  meet {
+    rvm("use #{ruby_version} do gem install passenger --no-rdoc --no-ri")
+  }
 end
 
-dep 'passenger module installed.rvm' do
-  requires 'rvm installed', 'apache setup' 'libcurl4-openssl-dev.managed', 'passenger.rvm'
-  setup { set( :passenger_path, gem_path("passenger")) }
-  met? { File.exists?("#{var(:passenger_path)}/ext/apache2/mod_passenger.so") }
-  meet { login_shell("passenger-install-apache2-module -a") }
+dep 'passenger module installed.rvm', :ruby_version do
+  ruby_version.default("1.9.3")
+  requires 'rvm installed', 'apache setup', 'libcurl4-openssl-dev.managed', 'passenger.rvm'.with(:ruby_version => ruby_version)
+  met? { File.exists?("#{gem_path("passenger",ruby_version)}/ext/apache2/mod_passenger.so") }
+  meet { rvm("use #{ruby_version} do passenger-install-apache2-module -a") }
 end
 
-dep 'passenger apache configured.rvm', :passenger_path do
-  requires 'passenger module installed.rvm'
-
+dep 'passenger apache configured.rvm', :ruby_version do
+  ruby_version.default("1.9.3")
+  requires 'passenger module installed.rvm'.with(:ruby_version => ruby_version)
   met? { File.exist?("/etc/apache2/mods-available/passenger.conf") }
   meet {
-    load_str = "LoadModule passenger_module #{passenger_path}/ext/apache2/mod_passenger.so"
+    load_str = "LoadModule passenger_module #{gem_path("passenger",ruby_version)}/ext/apache2/mod_passenger.so"
     str = [
-      "PassengerRoot #{passenger_path}",
-      "PassengerRuby #{ ruby_wrapper_path }",
+      "PassengerRoot #{gem_path("passenger",ruby_version)}",
+      "PassengerRuby #{ ruby_wrapper_path(ruby_version) }",
       "PassengerMaxPoolSize 2",
       "PassengerPoolIdleTime 0",
       "PassengerUseGlobalQueue on"
     ]
-    append_to_file load_str, "/etc/apache2/mods-available/passenger.load"
-    append_to_file str.join("\n "), "/etc/apache2/mods-available/passenger.conf"
-    shell("a2enmod passenger")
+    append_to_file load_str, "/etc/apache2/mods-available/passenger.load", :sudo => true
+    append_to_file str.join("\n "), "/etc/apache2/mods-available/passenger.conf", :sudo => true
+    sudo("a2enmod passenger")
   }
 end
 
