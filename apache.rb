@@ -1,8 +1,8 @@
 dep 'apache setup' do
-  requires 'apache2'
+  requires 'apache2.managed'
 end
 
-pkg 'apache2' do
+dep 'apache2.managed' do
   installs {
     via :apt, %w[apache2 apache2.2-common apache2-mpm-prefork apache2-utils libexpat1 ssl-cert apache2-prefork-dev libapr1-dev libaprutil1-dev]
   }

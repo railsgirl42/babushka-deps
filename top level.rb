@@ -1,48 +1,60 @@
-dep 'system' do
-  requires 'hostname', 'secured ssh logins', 'lax host key checking', 'admins can sudo', 'tmp cleaning grace period'
-end
-
-dep 'user setup' do
-  requires 'dot files', 'passwordless ssh logins', 'public key'
-  define_var :username, :default => shell('whoami')
+dep 'system', :host_name, :locale_name do
+  requires [
+    'set.locale'.with(locale_name),
+    'core software',
+    'hostname'.with(host_name),
+    'secured ssh logins',
+    'lax host key checking',
+    'admins can sudo',
+    'tmp cleaning grace period'
+  ]
+  requires 'bad certificates removed' if Babushka.host.linux?
   setup {
-    set :username, shell('whoami')
-    set :home_dir_base, "/home"
+    unmeetable! "This dep has to be run as root." unless shell('whoami') == 'root'
   }
 end
 
-dep 'rails app' do
-  requires 'webapp', 'passenger deploy repo', 'gems installed', 'migrated db'
-  define_var :rails_env, :default => 'production'
-  define_var :rails_root, :default => '~/current', :type => :path
-  setup {
-    set :vhost_type, 'passenger'
-  }
+dep 'user setup', :username, :key do
+  username.default(shell('whoami'))
+  requires [
+    'dot files'.with(:username => username),
+    'passwordless ssh logins'.with(username, key),
+    'public key',
+    'zsh'.with(username)
+  ]
 end
 
-# dep 'proxied app' do
-#   requires 'webapp'
-#   setup {
-#     set :vhost_type, 'proxy'
-#   }
-# end
+dep 'rails app', :domain, :domain_aliases, :username, :path, :listen_host, :listen_port, :proxy_host, :proxy_port, :env, :nginx_prefix, :enable_http, :enable_https, :force_https, :data_required do
+  requires 'rack app'.with(domain, domain_aliases, username, path, listen_host, listen_port, proxy_host, proxy_port, env, nginx_prefix, enable_http, enable_https, force_https, data_required)
+  requires 'db'.with(username, path, env, data_required, 'yes')
+end
 
-dep 'webapp' do
-  requires 'user exists', 'vhost enabled', 'webserver running'
-  define_var :domain, :default => :username
-  setup {
-    set :home_dir_base, "/home/www"
-  }
+dep 'rack app', :domain, :domain_aliases, :username, :path, :listen_host, :listen_port, :proxy_host, :proxy_port, :env, :nginx_prefix, :enable_http, :enable_https, :force_https, :data_required do
+  username.default!(shell('whoami'))
+  path.default('~/current')
+  env.default(ENV['RAILS_ENV'] || ENV['RACK_ENV'] || 'production')
+
+  requires 'webapp'.with('unicorn', domain, domain_aliases, username, path, listen_host, listen_port, proxy_host, proxy_port, nginx_prefix, enable_http, enable_https, force_https)
+  requires 'web repo'.with(path)
+  requires 'app bundled'.with(path, env)
+  requires 'rack.logrotate'.with(username)
+end
+
+dep 'proxied app' do
+  requires 'webapp'.with(:type => 'proxy')
+end
+
+dep 'webapp', :type, :domain, :domain_aliases, :username, :path, :listen_host, :listen_port, :proxy_host, :proxy_port, :nginx_prefix, :enable_http, :enable_https, :force_https do
+  username.default!(domain)
+  requires 'user exists'.with(username, '/srv/http')
+  requires 'vhost enabled.nginx'.with(type, domain, domain_aliases, path, listen_host, listen_port, proxy_host, proxy_port, nginx_prefix, enable_http, enable_https, force_https)
+  requires 'running.nginx'
 end
 
 dep 'core software' do
   requires {
-    on :linux, 'curl', 'screen', 'nmap', pkg('tree')
-    on :osx, 'curl', 'jnettop', 'nmap'
+    on :lenny, 'sudo.bin', 'lsof.managed', 'vim.managed', 'curl.bin', 'traceroute.managed', 'htop.managed', 'iotop.managed', 'jnettop.managed', 'nmap.managed', 'tree.managed', 'pv.managed'
+    on :linux, 'sudo.bin', 'lsof.managed', 'vim.managed', 'curl.bin', 'traceroute.managed', 'htop.managed', 'iotop.managed', 'jnettop.managed', 'tmux.managed', 'nmap.managed', 'tree.managed', 'pv.managed'
+    on :osx, 'nmap.managed', 'tree.managed', 'pv.managed'
   }
 end
-
-dep 'lampr server' do
-  requires 'system', 'rails server', 'php server'
-end
-

@@ -1,50 +1,68 @@
-
-dep 'passwordless ssh logins' do
-  requires 'user exists'
-  met? { grep var(:your_ssh_public_key), '~/.ssh/authorized_keys' }
-  before { shell 'mkdir -p ~/.ssh; chmod 700 ~/.ssh' }
-  meet { append_to_file var(:your_ssh_public_key), "~/.ssh/authorized_keys" }
-  after { shell 'chmod 600 ~/.ssh/authorized_keys' }
+dep 'dot files', :username, :github_user, :repo do
+  username.default!(shell('whoami'))
+  github_user.default('railsgirl42')
+  repo.default('dot-files')
+  requires 'user exists'.with(:username => username), 'git', 'curl.bin', 'git-smart.gem'
+  met? {
+    "~/.dot-files/.git".p.exists?
+  }
+  meet {
+    shell %Q{curl -L "http://github.com/#{github_user}/#{repo}/raw/master/clone_and_link.sh" | bash}
+  }
 end
 
-dep 'public key' do
-  met? { grep /^ssh-dss/, '~/.ssh/id_dsa.pub' }
-  meet { shell("ssh-keygen -t dsa -f ~/.ssh/id_dsa -N ''").tap_log }
+dep 'user setup for provisioning', :username, :key do
+  requires [
+    'user exists'.with(:username => username),
+    'passwordless ssh logins'.with(username, key),
+    'passwordless sudo'.with(username)
+  ]
 end
 
-dep 'dot files' do
-  requires 'user exists', 'git', 'curl'
-  met? { File.exists?(ENV['HOME'] / ".dot-files/.git") }
-  meet { shell %Q{curl -L "http://github.com/#{var :github_user, :default => 'traceym'}/#{var :dot_files_repo, :default => 'dot-files'}/raw/master/clone_and_link.sh" | bash} }
+dep 'user auth setup', :username, :password, :key do
+  requires 'user exists with password'.with(username, password)
+  requires 'passwordless ssh logins'.with(username, key)
 end
 
-dep 'user exists' do
-  on :osx do
-    met? { !shell("dscl . -list /Users").split("\n").grep(var(:username)).empty? }
+dep 'user exists with password', :username, :password do
+  requires 'user exists'.with(:username => username)
+  on :linux do
+    met? { shell('sudo cat /etc/shadow')[/^#{username}:[^\*!]/] }
     meet {
-      homedir = var(:home_dir_base) / var(:username)
+      sudo %{echo "#{password}\n#{password}" | passwd #{username}}
+    }
+  end
+end
+
+dep 'user exists', :username, :home_dir_base do
+  home_dir_base.default(username['.'] ? '/srv/http' : '/home')
+
+  on :osx do
+    met? { !shell("dscl . -list /Users").split("\n").grep(username).empty? }
+    meet {
+      homedir = home_dir_base / username
       {
         'Password' => '*',
         'UniqueID' => (501...1024).detect {|i| (Etc.getpwuid i rescue nil).nil? },
         'PrimaryGroupID' => 'admin',
-        'RealName' => var(:username),
+        'RealName' => username,
         'NFSHomeDirectory' => homedir,
-        'UserShell' => '/dev/null'
+        'UserShell' => '/bin/bash'
       }.each_pair {|k,v|
         # /Users/... here is a dscl path, not a filesystem path.
-        sudo "dscl . -create #{'/Users' / var(:username)} #{k} '#{v}'"
+        sudo "dscl . -create #{'/Users' / username} #{k} '#{v}'"
       }
       sudo "mkdir -p '#{homedir}'"
-      sudo "chown #{var(:username)}:admin '#{homedir}'"
+      sudo "chown #{username}:admin '#{homedir}'"
       sudo "chmod 701 '#{homedir}'"
     }
   end
   on :linux do
-    met? { grep(/^#{var(:username)}:/, '/etc/passwd') }
+    met? { '/etc/passwd'.p.grep(/^#{username}:/) }
     meet {
-      sudo "mkdir -p #{var :home_dir_base}" and
-      sudo "useradd -m -s /bin/bash -b #{var :home_dir_base} -G admin #{var(:username)}" and
-      sudo "chmod 701 #{var(:home_dir_base) / var(:username)}"
+      sudo "mkdir -p #{home_dir_base}" and
+      sudo "useradd -m -s /bin/bash -b #{home_dir_base} -G admin #{username}" and
+      sudo "chmod 701 #{home_dir_base / username}"
     }
   end
 end
