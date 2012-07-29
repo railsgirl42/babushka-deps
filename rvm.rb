@@ -39,8 +39,9 @@ dep 'rvm installed' do
   requires 'curl.managed', 'rvm requirements'
   met? { File.exist?("/usr/local/rvm") }
   meet do
-    log_shell "Installing rvm",
-              %{bash -c "`curl -L https://get.rvm.io | bash -s stable --ruby`"}
+    shell "curl -L https://get.rvm.io > /tmp/rvm-install-script"
+    sudo "bash -s stable /tmp/rvm-install-script"
+    shell "rm /tmp/rvm-install-script"
   end
 end
 
