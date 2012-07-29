@@ -40,7 +40,7 @@ dep 'rvm installed' do
   met? { File.exist?("/usr/local/rvm") }
   meet do
     log_shell "Installing rvm",
-              %{bash -c "`curl -sk https://rvm.beginrescueend.com/install/rvm`"}
+              %{bash -c "`curl -L https://get.rvm.io | bash -s stable --ruby`"}
   end
 end
 
