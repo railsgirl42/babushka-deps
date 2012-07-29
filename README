@@ -1,1 +1,7 @@
 Babushka Dependencies
+
+To install babushka on Ubuntu
+
+sudo apt-get install curl
+
+bash -c "`curl babushka.me/up`"

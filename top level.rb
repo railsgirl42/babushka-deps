@@ -11,14 +11,14 @@ dep 'user setup' do
   }
 end
 
-# dep 'rails app' do
-#   requires 'webapp', 'passenger deploy repo', 'gems installed', 'migrated db'
-#   define_var :rails_env, :default => 'production'
-#   define_var :rails_root, :default => '~/current', :type => :path
-#   setup {
-#     set :vhost_type, 'passenger'
-#   }
-# end
+dep 'rails app' do
+  requires 'webapp', 'passenger deploy repo', 'gems installed', 'migrated db'
+  define_var :rails_env, :default => 'production'
+  define_var :rails_root, :default => '~/current', :type => :path
+  setup {
+    set :vhost_type, 'passenger'
+  }
+end
 
 # dep 'proxied app' do
 #   requires 'webapp'
@@ -27,13 +27,13 @@ end
 #   }
 # end
 
-# dep 'webapp' do
-#   requires 'user exists', 'vhost enabled', 'webserver running'
-#   define_var :domain, :default => :username
-#   setup {
-#     set :home_dir_base, "/home/www"
-#   }
-# end
+dep 'webapp' do
+  requires 'user exists', 'vhost enabled', 'webserver running'
+  define_var :domain, :default => :username
+  setup {
+    set :home_dir_base, "/home/www"
+  }
+end
 
 dep 'core software' do
   requires {
