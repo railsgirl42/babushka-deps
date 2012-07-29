@@ -45,7 +45,7 @@ dep 'rvm installed' do
 end
 
 dep 'rvm requirements' do
-  requires %w(build-essential.managed bison.managed openssl.managed libreadline6.managed libreadline6-dev.managed curl.managed zlib1g.managed libssl-dev.managed libyaml-dev.managed sqlite3.managed libxml2-dev.managed libxslt1-dev.managed)
+  requires %w(build-essential.managed bison.managed openssl.managed libreadline6.managed libreadline6-dev.managed curl.bin zlib1g.managed libssl-dev.managed libyaml-dev.managed sqlite3.managed libxml.managed libxslt.managed)
 end
 
 dep 'rvm set group for user' do

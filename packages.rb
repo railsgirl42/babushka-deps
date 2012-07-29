@@ -1,4 +1,8 @@
 dep 'bison.managed'
+dep 'build-essential.managed' do
+  provides []
+end
+
 dep 'bundler.gem' do
   installs 'bundler >= 1.0.13'
   provides 'bundle'
@@ -47,6 +51,13 @@ dep 'readline headers.managed' do
   }
   provides []
 end
+dep 'libreadline6.managed' do
+  provides []
+end
+dep 'libreadline6-dev.managed' do
+  provides []
+end
+
 dep 'libssl headers.managed' do
   installs {
     via :apt, 'libssl-dev'
@@ -54,6 +65,10 @@ dep 'libssl headers.managed' do
   }
   provides []
 end
+dep 'libssl-dev.managed' do
+  provides []
+end
+
 dep 'libxml.managed' do
   installs { via :apt, 'libxml2-dev' }
   provides []
@@ -62,6 +77,10 @@ dep 'libxslt.managed' do
   installs { via :apt, 'libxslt1-dev' }
   provides []
 end
+dep 'libyaml-dev.managed' do
+  provides []
+end
+
 dep 'logrotate.managed'
 dep 'mdns.managed' do
   installs {
@@ -80,6 +99,7 @@ dep 'ncurses.managed' do
 end
 dep 'nmap.managed'
 dep 'oniguruma.managed'
+dep 'openssl.managed'
 dep 'pcre.managed' do
   installs {
     via :apt, 'libpcre3-dev'
@@ -108,6 +128,11 @@ dep 'sshd.managed' do
     via :apt, 'openssh-server'
   }
 end
+dep 'sqlite3.managed' do
+  installs { via :apt, 'libsqlite3-0', "libsqlite3-dev", "sqlite3"}
+  provides []
+end
+
 dep 'tmux.managed'
 dep 'traceroute.managed'
 dep 'tree.managed'
@@ -120,6 +145,11 @@ dep 'yaml headers.managed' do
   }
   provides []
 end
+dep 'zlib1g.managed' do
+  installs { via :apt, 'zlib1g','zlib1g-dev'}
+  provides []
+end
+
 dep 'zlib headers.managed' do
   installs {
     via :apt, 'zlib1g-dev'
