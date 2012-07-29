@@ -40,7 +40,7 @@ dep 'rvm installed' do
   met? { File.exist?("/usr/local/rvm") }
   meet do
     shell "curl -L https://get.rvm.io > /tmp/rvm-install-script"
-    sudo "bash -s stable /tmp/rvm-install-script"
+    sudo "bash -s stable < /tmp/rvm-install-script"
     shell "rm /tmp/rvm-install-script"
   end
 end
