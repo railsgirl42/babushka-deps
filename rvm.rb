@@ -36,7 +36,7 @@ dep 'test.rvm' do
 end
 
 dep 'rvm installed' do
-  requires 'curl.managed', 'rvm requirements'
+  requires 'curl.bin', 'rvm requirements'
   met? { File.exist?("/usr/local/rvm") }
   meet do
     shell "curl -L https://get.rvm.io > /tmp/rvm-install-script"
@@ -49,27 +49,31 @@ dep 'rvm requirements' do
   requires %w(build-essential.managed bison.managed openssl.managed libreadline6.managed libreadline6-dev.managed curl.bin zlib1g.managed libssl-dev.managed libyaml-dev.managed sqlite3.managed libxml.managed libxslt.managed)
 end
 
-dep 'rvm set group for user' do
-  before { var(:rvm_username, :default => shell("whoami")) }
-  met? { shell("groups #{var(:rvm_username)}").split(" ").include?("rvm") }
-  meet { sudo("adduser #{var(:rvm_username)} rvm") }
+dep 'rvm set group for user', :rvm_username do
+  requires 'rvm installed'
+  before { rvm_username.default(shell("whoami")) }
+  met? { shell("groups #{rvm_username}").split(" ").include?("rvm") }
+  meet { sudo("adduser #{rvm_username} rvm") }
 end
 
-dep 'ruby installed.rvm' do
-  met? { rvm("list").include?(var(:default_ruby, :default => '1.9.3')) }
+dep 'ruby installed.rvm', :default_ruby do
+  requires 'rvm installed'
+  default_ruby.default("1.9.3")
+  setup {
+    unmeetable! "You must belong to the rvm group to install rubies." unless shell('groups').split(" ").include?("rvm")
+  }
+  met? { rvm("list").include?(default_ruby) }
 
   meet {
-    File.open("/root/.curlrc", "w") {|f| f.puts "-k"}
-    rvm("install #{var(:default_ruby)}")
-    shell "rm /root/.curlrc"
+    rvm("install #{default_ruby}")
   }
 end
 
-dep 'setup default ruby.rvm' do
+dep 'setup default ruby.rvm', :default_ruby do
   requires 'ruby installed.rvm'
-  met? { login_shell('ruby --version')["ruby #{var(:default_ruby)}"] }
+  met? { login_shell('ruby --version')["ruby #{default_ruby}"] }
   meet {
-    rvm("use #{var(:default_ruby)} --default")
+    rvm("use #{default_ruby} --default")
   }
 end
 
@@ -79,25 +83,26 @@ dep 'bundler.rvm' do
 end
 
 dep 'passenger.rvm' do
+  requires 'rvm installed'
   met? { rvm("gem list passenger")["passenger"] }
   meet { rvm("gem install passenger --no-rdoc --no-ri") }
 end
 
 dep 'passenger module installed.rvm' do
-  requires 'libcurl4-openssl-dev.managed'
+  requires 'rvm installed', 'apache setup' 'libcurl4-openssl-dev.managed', 'passenger.rvm'
   setup { set( :passenger_path, gem_path("passenger")) }
   met? { File.exists?("#{var(:passenger_path)}/ext/apache2/mod_passenger.so") }
   meet { login_shell("passenger-install-apache2-module -a") }
 end
 
-dep 'passenger apache configured.rvm' do
+dep 'passenger apache configured.rvm', :passenger_path do
   requires 'passenger module installed.rvm'
 
   met? { File.exist?("/etc/apache2/mods-available/passenger.conf") }
   meet {
-    load_str = "LoadModule passenger_module #{var(:passenger_path)}/ext/apache2/mod_passenger.so"
+    load_str = "LoadModule passenger_module #{passenger_path}/ext/apache2/mod_passenger.so"
     str = [
-      "PassengerRoot #{var(:passenger_path)}",
+      "PassengerRoot #{passenger_path}",
       "PassengerRuby #{ ruby_wrapper_path }",
       "PassengerMaxPoolSize 2",
       "PassengerPoolIdleTime 0",

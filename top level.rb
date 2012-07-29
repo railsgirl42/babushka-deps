@@ -19,8 +19,7 @@ dep 'user setup', :username, :key do
   requires [
     'dot files'.with(:username => username),
     'passwordless ssh logins'.with(username, key),
-    'public key',
-    'zsh'.with(username)
+    'public key'
   ]
 end
 
@@ -54,7 +53,7 @@ end
 dep 'core software' do
   requires {
     on :lenny, 'sudo.bin', 'lsof.managed', 'vim.managed', 'curl.bin', 'traceroute.managed', 'htop.managed', 'iotop.managed', 'jnettop.managed', 'nmap.managed', 'tree.managed', 'pv.managed'
-    on :linux, 'sudo.bin', 'lsof.managed', 'vim.managed', 'curl.bin', 'traceroute.managed', 'htop.managed', 'iotop.managed', 'jnettop.managed', 'tmux.managed', 'nmap.managed', 'tree.managed', 'pv.managed'
+    on :linux, 'sudo.bin', 'lsof.managed', 'curl.bin', 'traceroute.managed', 'htop.managed', 'iotop.managed', 'jnettop.managed', 'tmux.managed', 'nmap.managed', 'tree.managed', 'pv.managed'
     on :osx, 'nmap.managed', 'tree.managed', 'pv.managed'
   }
 end
