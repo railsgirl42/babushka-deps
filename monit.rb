@@ -7,7 +7,7 @@ dep 'monit.managed'
 
 dep "autostart monit" do
   requires 'monit.managed'
-  met? { !Fancypath.grep(/^[^#]*startup=0/, "/etc/default/monit") && File.exists?("/etc/init/monit.conf") }
+  met? { !Fancypath("/etc/default/monit").grep(/^[^#]*startup=0/) && File.exists?("/etc/init/monit.conf") }
   meet {
     shell("sudo sed -i'' -e 's/^startup=0$/startup=1/' '/etc/default/monit'")
     # remove existing monit startscripts
