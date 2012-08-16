@@ -59,5 +59,5 @@ dep 'core software' do
 end
 
 dep 'production server' do
-  requires 'passenger apache configured.rvm', 'php server', 'mysql root password', 'autostart monit'
+  requires 'sudo defaults', 'passenger apache configured.rvm', 'php server', 'mysql root password', 'autostart monit'
 end

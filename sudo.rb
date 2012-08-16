@@ -26,15 +26,12 @@ dep 'passwordless sudo removed' do
 end
 
 dep 'sudo defaults', :username do
-  setup {
-    unmeetable! "This dep must be run as root." unless shell('whoami') == 'root'
-  }
   met? {
     shell File.exist?("/etc/sudoers.d/defaults")
   }
   meet {
     shell "echo 'Defaults !tty_tickets,timestamp_timeout=15' >> /tmp/defaults"
     shell "chmod 440 /tmp/defaults"
-    shell "mv /tmp/defaults /etc/sudoers.d/defaults"
+    shell "sudo mv /tmp/defaults /etc/sudoers.d/defaults"
   }
 end
