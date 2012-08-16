@@ -27,7 +27,7 @@ end
 
 dep 'sudo defaults', :username do
   met? {
-    shell File.exist?("/etc/sudoers.d/defaults")
+    File.exist?("/etc/sudoers.d/defaults")
   }
   meet {
     shell "echo 'Defaults !tty_tickets,timestamp_timeout=15' >> /tmp/defaults"
