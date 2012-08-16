@@ -20,7 +20,10 @@ end
 dep 'mysql root password',  :db_admin_password do
   requires 'mysql.managed'
   met? { raw_shell("echo '\q' | mysql -u root").stderr["Access denied for user 'root'@'localhost' (using password: NO)"] }
-  meet { mysql(%Q{GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' IDENTIFIED BY '#{db_admin_password}'}, 'root', false) }
+  meet {
+    cmd = %Q{GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' IDENTIFIED BY '#{db_admin_password}'}
+    shell('mysql', '-u', 'root', :input => cmd.end_with(';'))
+  }
 end
 
 dep 'mysql.managed' do
