@@ -33,5 +33,6 @@ dep 'sudo defaults', :username do
     shell "echo 'Defaults !tty_tickets,timestamp_timeout=15' >> /tmp/defaults"
     shell "chmod 440 /tmp/defaults"
     shell "sudo mv /tmp/defaults /etc/sudoers.d/defaults"
+    shell "sudo chown root:root /etc/sudoers.d/defaults"
   }
 end

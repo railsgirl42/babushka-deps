@@ -28,8 +28,5 @@ dep 'mysql.managed' do
     via :apt, %w[mysql-server libmysqlclient-dev]
   }
   provides 'mysql'
-  after :on => :osx do
-    sudo "ln -s #{Babushka::MacportsHelper.prefix / 'lib/mysql5/bin/mysql*'} #{Babushka::MacportsHelper.prefix / 'bin/'}"
-  end
 end
 
