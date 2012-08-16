@@ -57,3 +57,7 @@ dep 'core software' do
     on :osx, 'nmap.managed', 'tree.managed', 'pv.managed'
   }
 end
+
+dep 'production server' do
+  requires 'passenger apache configured.rvm', 'php server', 'mysql root password', 'autostart monit'
+end

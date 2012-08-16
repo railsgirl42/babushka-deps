@@ -1,30 +1,26 @@
-dep 'mysql.gem' do
-  requires 'mysql.managed'
-  provides []
+
+dep 'mysql access',:db_user, :db_host, :db_name, :db_password  do
+  requires 'existing mysql db'.with(:db_name => db_name)
+  db_user.default(:username)
+  db_host.default('localhost')
+  met? { mysql "use #{db_name}", db_user }
+  meet { mysql %Q{GRANT ALL PRIVILEGES ON #{db_name}.* TO '#{db_user}'@'#{db_host}' IDENTIFIED BY '#{db_password}'} }
 end
 
-dep 'mysql access' do
-  requires 'existing mysql db'
-  define_var :db_user, :default => :username
-  define_var :db_host, :default => 'localhost'
-  met? { mysql "use #{var(:db_name)}", var(:db_user) }
-  meet { mysql %Q{GRANT ALL PRIVILEGES ON #{var :db_name}.* TO '#{var :db_user}'@'#{var :db_host}' IDENTIFIED BY '#{var :db_password}'} }
-end
-
-dep 'existing mysql db' do
+dep 'existing mysql db', :db_name do
   requires 'mysql configured'
-  met? { mysql("SHOW DATABASES").split("\n")[1..-1].any? {|l| /\b#{var :db_name}\b/ =~ l } }
-  meet { mysql "CREATE DATABASE #{var :db_name}" }
+  met? { mysql("SHOW DATABASES").split("\n")[1..-1].any? {|l| /\b#{db_name}\b/ =~ l } }
+  meet { mysql "CREATE DATABASE #{db_name}" }
 end
 
 dep 'mysql configured' do
   requires 'mysql root password'
 end
 
-dep 'mysql root password' do
+dep 'mysql root password',  :db_admin_password do
   requires 'mysql.managed'
   met? { raw_shell("echo '\q' | mysql -u root").stderr["Access denied for user 'root'@'localhost' (using password: NO)"] }
-  meet { mysql(%Q{GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' IDENTIFIED BY '#{var :db_admin_password}'}, 'root', false) }
+  meet { mysql(%Q{GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' IDENTIFIED BY '#{db_admin_password}'}, 'root', false) }
 end
 
 dep 'mysql.managed' do
